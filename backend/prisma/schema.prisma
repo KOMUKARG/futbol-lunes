@@ -1,0 +1,199 @@
+// Schema de la base de datos - App Fútbol de los Lunes
+// Ver la sección 3 (Modelo de datos) del documento de diseño para el diagrama ER
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Rol {
+  jugador
+  admin
+}
+
+enum Autopercepcion {
+  oscuro
+  blanco
+  indistinto
+}
+
+enum EstadoPartido {
+  abierto
+  cerrado
+  jugado
+  cancelado
+}
+
+enum EstadoInscripcion {
+  confirmado
+  espera
+  baja
+}
+
+enum Color {
+  oscuro
+  blanco
+}
+
+model Usuario {
+  id               String   @id @default(uuid())
+  nombre           String
+  email            String   @unique
+  passwordHash     String
+  foto             String?
+  fechaAlta        DateTime @default(now())
+
+  // Perfil
+  edad             Int?
+  altura           Float?
+  estadoFisico     String?
+  posicion         String?
+  clubFavorito     String?
+  intereses        String?  // texto libre, corto (ver validación en el front, máx 40 caracteres)
+  autopercepcion   Autopercepcion?
+  rol              Rol      @default(jugador)
+
+  // Relaciones
+  inscripciones              Inscripcion[]
+  equipoJugador              EquipoJugador[]
+  goles                      Gol[]
+  posts                      Post[]
+  comentarios                Comentario[]
+  calificacionesEnviadas     Calificacion[] @relation("CalificacionesEnviadas")
+  calificacionesRecibidas    Calificacion[] @relation("CalificacionesRecibidas")
+  votosMVPEmitidos           VotoMVP[]      @relation("VotosEmitidos")
+  votosMVPRecibidos          VotoMVP[]      @relation("VotosRecibidos")
+
+  @@map("usuarios")
+}
+
+model Partido {
+  id            String        @id @default(uuid())
+  fecha         DateTime      // el lunes correspondiente
+  estado        EstadoPartido @default(abierto)
+  golesOscuros  Int?
+  golesBlancos  Int?
+  creadoEn      DateTime      @default(now())
+
+  inscripciones Inscripcion[]
+  equipos       Equipo[]
+  goles         Gol[]
+  votosMVP      VotoMVP[]
+
+  @@map("partidos")
+}
+
+model Inscripcion {
+  id         String            @id @default(uuid())
+  partidoId  String
+  partido    Partido           @relation(fields: [partidoId], references: [id], onDelete: Cascade)
+  jugadorId  String
+  jugador    Usuario           @relation(fields: [jugadorId], references: [id], onDelete: Cascade)
+  fechaHora  DateTime          @default(now())
+  estado     EstadoInscripcion @default(confirmado)
+
+  @@unique([partidoId, jugadorId])
+  @@map("inscripciones")
+}
+
+model Equipo {
+  id         String          @id @default(uuid())
+  partidoId  String
+  partido    Partido         @relation(fields: [partidoId], references: [id], onDelete: Cascade)
+  color      Color
+  jugadores  EquipoJugador[]
+
+  @@unique([partidoId, color])
+  @@map("equipos")
+}
+
+model EquipoJugador {
+  id         String   @id @default(uuid())
+  equipoId   String
+  equipo     Equipo   @relation(fields: [equipoId], references: [id], onDelete: Cascade)
+  jugadorId  String
+  jugador    Usuario  @relation(fields: [jugadorId], references: [id], onDelete: Cascade)
+
+  @@unique([equipoId, jugadorId])
+  @@map("equipo_jugadores")
+}
+
+model Gol {
+  id           String   @id @default(uuid())
+  partidoId    String
+  partido      Partido  @relation(fields: [partidoId], references: [id], onDelete: Cascade)
+  jugadorId    String
+  jugador      Usuario  @relation(fields: [jugadorId], references: [id], onDelete: Cascade)
+  equipoColor  Color
+  cantidad     Int      @default(1)
+
+  @@map("goles")
+}
+
+// Una fila por concepto calificado, agrupada por período/calificado/calificador
+model Calificacion {
+  id                    String   @id @default(uuid())
+  periodo               String   // ej. "2026-Q3"
+  jugadorCalificadoId   String
+  jugadorCalificado     Usuario  @relation("CalificacionesRecibidas", fields: [jugadorCalificadoId], references: [id], onDelete: Cascade)
+  jugadorQueCalificaId  String
+  jugadorQueCalifica    Usuario  @relation("CalificacionesEnviadas", fields: [jugadorQueCalificaId], references: [id], onDelete: Cascade)
+
+  // Conceptos (escala 1-5) — ver sección 4.4 del documento de diseño
+  nivelTecnico       Int
+  actitud            Int
+  puntualidad        Int
+  juegoEnEquipo      Int
+  velocidad          Int
+  regate             Int
+  cabezazo           Int
+  habilidadTactica   Int
+  remate             Int
+
+  creadoEn           DateTime @default(now())
+
+  @@unique([periodo, jugadorCalificadoId, jugadorQueCalificaId])
+  @@map("calificaciones")
+}
+
+model VotoMVP {
+  id                String   @id @default(uuid())
+  partidoId         String
+  partido           Partido  @relation(fields: [partidoId], references: [id], onDelete: Cascade)
+  jugadorQueVotaId  String
+  jugadorQueVota    Usuario  @relation("VotosEmitidos", fields: [jugadorQueVotaId], references: [id], onDelete: Cascade)
+  jugadorVotadoId   String
+  jugadorVotado     Usuario  @relation("VotosRecibidos", fields: [jugadorVotadoId], references: [id], onDelete: Cascade)
+  fecha             DateTime @default(now())
+
+  @@unique([partidoId, jugadorQueVotaId])
+  @@map("votos_mvp")
+}
+
+model Post {
+  id           String        @id @default(uuid())
+  autorId      String
+  autor        Usuario       @relation(fields: [autorId], references: [id], onDelete: Cascade)
+  texto        String?
+  imagenUrl    String?
+  fecha        DateTime      @default(now())
+  comentarios  Comentario[]
+
+  @@map("posts")
+}
+
+model Comentario {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  autorId   String
+  autor     Usuario  @relation(fields: [autorId], references: [id], onDelete: Cascade)
+  texto     String
+  fecha     DateTime @default(now())
+
+  @@map("comentarios")
+}
