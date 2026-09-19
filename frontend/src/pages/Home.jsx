@@ -81,10 +81,20 @@ export default function Home() {
           </div>
         )}
 
-        {esAdmin && proximo && (
-          <Link to="/admin/armado-equipos">
-            <button className="btn-outline">⚙ Armar equipos (Admin)</button>
-          </Link>
+               {esAdmin && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <Link to="/admin/nuevo-partido">
+              <button className="btn-outline">📅 Crear partido (Admin)</button>
+            </Link>
+            <Link to="/admin/nuevo-jugador">
+              <button className="btn-outline">➕ Nuevo jugador (Admin)</button>
+            </Link>
+            {proximo && (
+              <Link to="/admin/armado-equipos">
+                <button className="btn-outline">⚙ Armar equipos (Admin)</button>
+              </Link>
+            )}
+          </div>
         )}
       </div>
 
