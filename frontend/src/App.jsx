@@ -12,6 +12,8 @@ import CargarResultado from './pages/CargarResultado';
 import Calificar from './pages/Calificar';
 import Perfil from './pages/Perfil';
 import Feed from './pages/Feed';
+import AltaJugador from './pages/AltaJugador';
+import CrearPartido from './pages/CrearPartido';
 
 export default function App() {
   return (
@@ -31,6 +33,8 @@ export default function App() {
 
           <Route path="/admin/armado-equipos" element={<RutaPrivada soloAdmin><ArmadoEquipos /></RutaPrivada>} />
           <Route path="/admin/partido/:id/resultado" element={<RutaPrivada soloAdmin><CargarResultado /></RutaPrivada>} />
+          <Route path="/admin/nuevo-jugador" element={<RutaPrivada soloAdmin><AltaJugador /></RutaPrivada>} />
+          <Route path="/admin/nuevo-partido" element={<RutaPrivada soloAdmin><CrearPartido /></RutaPrivada>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
