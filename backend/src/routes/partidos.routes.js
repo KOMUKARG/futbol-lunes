@@ -61,6 +61,18 @@ router.post('/', requiereAuth, requiereAdmin, async (req, res) => {
   res.status(201).json(partido);
 });
 
+// DELETE /api/partidos/:id — solo Admin: borra el partido y todo lo relacionado (cascada:
+// inscripciones, equipos, goles, votos MVP, calificaciones). Pensado para limpiar partidos
+// de prueba o cargados por error.
+router.delete('/:id', requiereAuth, requiereAdmin, async (req, res) => {
+  const { id } = req.params;
+  const partido = await prisma.partido.findUnique({ where: { id } });
+  if (!partido) return res.status(404).json({ error: 'Partido no encontrado.' });
+
+  await prisma.partido.delete({ where: { id } });
+  res.status(204).end();
+});
+
 // PATCH /api/partidos/:id/estado — solo Admin: abre/cierra la inscripción o cancela el partido
 router.patch('/:id/estado', requiereAuth, requiereAdmin, async (req, res) => {
   const { estado } = req.body;

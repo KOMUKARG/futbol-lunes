@@ -39,9 +39,10 @@ function fraseDeLaSemana() {
 
 export default function Home() {
   const { usuario, esAdmin } = useAuth();
-  const { escudoOscuroUrl, escudoBlancoUrl } = useConfiguracion();
+  const { escudoOscuroUrl, escudoBlancoUrl, calificacionesAbiertas, recargarConfiguracion } = useConfiguracion();
   const [proximo, setProximo] = useState(null);
   const [ultimo, setUltimo] = useState(null);
+  const [cambiandoCalificaciones, setCambiandoCalificaciones] = useState(false);
 
   useEffect(() => {
     api.get('/partidos/proximo').then((res) => setProximo(res.data)).catch(() => setProximo(null));
@@ -53,6 +54,16 @@ export default function Home() {
 
   const confirmados = proximo?.inscripciones?.filter((i) => i.estado === 'confirmado').length || 0;
   const frase = fraseDeLaSemana();
+
+  async function toggleCalificaciones() {
+    setCambiandoCalificaciones(true);
+    try {
+      await api.patch('/configuracion', { calificacionesAbiertas: !calificacionesAbiertas });
+      await recargarConfiguracion();
+    } finally {
+      setCambiandoCalificaciones(false);
+    }
+  }
 
   return (
     <div className="app-shell">
@@ -91,6 +102,46 @@ export default function Home() {
               </div>
             </div>
             <Link to="/inscripcion"><button className="btn-primary">Ver inscripción</button></Link>
+            <Link to={`/partido/${proximo.id}`}><button className="btn-outline">Ver detalle del partido</button></Link>
+          </div>
+        )}
+
+        {(calificacionesAbiertas || esAdmin) && (
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="label">Calificaciones trimestrales</div>
+              <div style={{
+                fontSize: 11, fontWeight: 800, padding: '4px 10px', borderRadius: 20,
+                background: calificacionesAbiertas ? 'var(--accent-bg)' : '#EFEDE7',
+                color: calificacionesAbiertas ? 'var(--accent)' : 'var(--muted)',
+              }}>
+                {calificacionesAbiertas ? 'ABIERTAS' : 'CERRADAS'}
+              </div>
+            </div>
+
+            {calificacionesAbiertas && (
+              <Link to="/calificar"><button className="btn-primary">Calificar ahora</button></Link>
+            )}
+
+            {esAdmin && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, borderTop: esAdmin && calificacionesAbiertas ? '1px solid var(--border)' : 'none', paddingTop: esAdmin && calificacionesAbiertas ? 12 : 0 }}>
+                <div style={{ flexGrow: 1, fontSize: 11.5, color: 'var(--muted)' }}>Como admin, vos decidís cuándo abrirlas y cerrarlas.</div>
+                <button
+                  onClick={toggleCalificaciones}
+                  disabled={cambiandoCalificaciones}
+                  style={{
+                    width: 42, height: 24, borderRadius: 20, border: 'none', position: 'relative', flexShrink: 0, cursor: 'pointer',
+                    background: calificacionesAbiertas ? 'var(--accent)' : '#D8D5CD',
+                  }}
+                  aria-label="Abrir o cerrar las calificaciones trimestrales"
+                >
+                  <div style={{
+                    position: 'absolute', top: 2, width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                    boxShadow: '0 1px 3px rgba(0,0,0,.2)', left: calificacionesAbiertas ? 20 : 2, transition: 'left .15s',
+                  }} />
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -126,8 +177,8 @@ export default function Home() {
 
         {esAdmin && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <Link to="/admin/nuevo-partido">
-              <button className="btn-outline">📅 Crear partido (Admin)</button>
+            <Link to="/admin/partidos">
+              <button className="btn-outline">📅 Gestionar partidos (Admin)</button>
             </Link>
             <Link to="/admin/nuevo-jugador">
               <button className="btn-outline">➕ Nuevo jugador (Admin)</button>

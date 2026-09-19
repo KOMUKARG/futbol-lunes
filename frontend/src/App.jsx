@@ -18,6 +18,7 @@ import Feed from './pages/Feed';
 import AltaJugador from './pages/AltaJugador';
 import CrearPartido from './pages/CrearPartido';
 import EscudosConfig from './pages/EscudosConfig';
+import GestionPartidos from './pages/GestionPartidos';
 
 export default function App() {
   return (
@@ -43,6 +44,7 @@ export default function App() {
             <Route path="/admin/nuevo-jugador" element={<RutaPrivada soloAdmin><AltaJugador /></RutaPrivada>} />
             <Route path="/admin/nuevo-partido" element={<RutaPrivada soloAdmin><CrearPartido /></RutaPrivada>} />
             <Route path="/admin/escudos" element={<RutaPrivada soloAdmin><EscudosConfig /></RutaPrivada>} />
+            <Route path="/admin/partidos" element={<RutaPrivada soloAdmin><GestionPartidos /></RutaPrivada>} />
           </Routes>
         </BrowserRouter>
       </ConfiguracionProvider>

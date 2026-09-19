@@ -21,26 +21,17 @@ function proximoLunes() {
   return aFechaLocal(lunes);
 }
 
-const ESTADOS_LABEL = { abierto: 'Inscripción abierta', cerrado: 'Inscripción cerrada', jugado: 'Jugado', cancelado: 'Cancelado' };
-
 export default function CrearPartido() {
   const navigate = useNavigate();
   const [fecha, setFecha] = useState(proximoLunes());
   const [abrirYa, setAbrirYa] = useState(true);
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
-  const [proximo, setProximo] = useState(undefined); // undefined = cargando, null = no hay
-  const [cancelando, setCancelando] = useState(false);
+  const [hayActivo, setHayActivo] = useState(false);
 
   useEffect(() => {
-    cargarProximo();
+    api.get('/partidos/proximo').then(() => setHayActivo(true)).catch(() => setHayActivo(false));
   }, []);
-
-  function cargarProximo() {
-    api.get('/partidos/proximo')
-      .then((res) => setProximo(res.data))
-      .catch(() => setProximo(null));
-  }
 
   async function crear() {
     setError('');
@@ -58,20 +49,6 @@ export default function CrearPartido() {
     }
   }
 
-  async function cancelarProximo() {
-    if (!proximo) return;
-    setCancelando(true);
-    setError('');
-    try {
-      await api.patch(`/partidos/${proximo.id}/estado`, { estado: 'cancelado' });
-      cargarProximo();
-    } catch (e) {
-      setError(e.response?.data?.error || 'No se pudo cancelar el partido.');
-    } finally {
-      setCancelando(false);
-    }
-  }
-
   return (
     <div className="app-shell">
       <div className="header">
@@ -84,25 +61,15 @@ export default function CrearPartido() {
       </div>
 
       <div className="content" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {proximo === undefined && (
-          <div style={{ fontSize: 12.5, color: 'var(--muted)' }}>Buscando si ya hay un próximo partido…</div>
-        )}
-
-        {proximo && (
+        {hayActivo && (
           <div className="card" style={{ borderColor: '#F0DDBE', background: '#FFFBF3', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: '#8A6414', textTransform: 'uppercase', letterSpacing: '.05em' }}>
-              Ya hay un partido programado
+              Ya hay un partido activo
             </div>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>
-              {new Date(proximo.fecha).toLocaleDateString('es-AR', { weekday: 'long', day: '2-digit', month: '2-digit', timeZone: 'UTC' })}
-            </div>
-            <div style={{ fontSize: 12, color: 'var(--muted)' }}>Estado: {ESTADOS_LABEL[proximo.estado] || proximo.estado}</div>
             <div style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.4 }}>
-              Mientras este partido siga abierto o cerrado (no cancelado ni jugado), la app lo va a seguir mostrando como "el próximo partido" aunque crees uno nuevo con otra fecha.
+              Mientras haya otro partido abierto o cerrado, la app lo va a seguir mostrando como "el próximo" en vez del que crees acá. Cancelalo o eliminalo primero desde "Gestionar partidos".
             </div>
-            <button className="btn-outline" onClick={cancelarProximo} disabled={cancelando}>
-              {cancelando ? 'Cancelando…' : 'Cancelar este partido'}
-            </button>
+            <Link to="/admin/partidos"><button className="btn-outline">Gestionar partidos existentes</button></Link>
           </div>
         )}
 
