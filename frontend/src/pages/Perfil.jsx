@@ -8,11 +8,18 @@ import { comprimirImagen } from '../utils/comprimirImagen';
 const CAMPOS_EDITABLES = [
   { key: 'edad', label: 'Edad', tipo: 'number', sufijo: ' años' },
   { key: 'altura', label: 'Altura (m)', tipo: 'number', paso: '0.01' },
-  { key: 'posicion', label: 'Posición', tipo: 'text' },
   { key: 'clubFavorito', label: 'Club favorito', tipo: 'text' },
 ];
 
-const OPCIONES_ESTADO_FISICO = ['Regular', 'Bueno', 'Excelente'];
+const OPCIONES_POSICION = ['Arquero', 'Defensor', 'Mediocampista', 'Delantero'];
+
+const OPCIONES_ESTADO_FISICO = ['Malo', 'Regular', 'Bueno', 'Muy Bueno', 'Excelente'];
+
+const OPCIONES_AUTOPERCEPCION = [
+  { value: 'oscuro', label: 'Oscuro' },
+  { value: 'blanco', label: 'Blanco' },
+  { value: 'indistinto', label: 'Prefiero no decir' },
+];
 
 export default function Perfil() {
   const { id } = useParams();
@@ -44,6 +51,7 @@ export default function Perfil() {
         clubFavorito: res.data.clubFavorito ?? '',
         estadoFisico: res.data.estadoFisico ?? '',
         intereses: res.data.intereses ?? '',
+        autopercepcion: res.data.autopercepcion ?? '',
       });
     });
   }
@@ -60,6 +68,7 @@ export default function Perfil() {
         clubFavorito: form.clubFavorito || null,
         estadoFisico: form.estadoFisico || null,
         intereses: form.intereses || null,
+        autopercepcion: form.autopercepcion || null,
       };
       const { data: actualizado } = await api.patch('/usuarios/me', data);
       setPerfil((p) => ({ ...p, ...actualizado }));
@@ -156,7 +165,7 @@ export default function Perfil() {
                 border: perfil.autopercepcion === 'blanco' ? '1.5px solid var(--ink)' : 'none',
                 borderRadius: 20, padding: '4px 12px', fontSize: 11, fontWeight: 700,
               }}>
-                {perfil.autopercepcion === 'blanco' ? 'Blanco' : perfil.autopercepcion === 'oscuro' ? 'Oscuro' : 'Indistinto'}
+                {perfil.autopercepcion === 'blanco' ? 'Blanco' : perfil.autopercepcion === 'oscuro' ? 'Oscuro' : 'Prefiere no decir'}
               </div>
             )}
             {perfil.posicion && <div className="tag">{perfil.posicion}</div>}
@@ -197,15 +206,32 @@ export default function Perfil() {
           </div>
 
           <div>
+            <div className="label" style={{ marginBottom: 5 }}>Posición</div>
+            {esPropio && editando ? (
+              <select
+                value={form.posicion}
+                onChange={(e) => setForm((f) => ({ ...f, posicion: e.target.value }))}
+              >
+                <option value="">Sin definir</option>
+                {OPCIONES_POSICION.map((op) => (
+                  <option key={op} value={op}>{op}</option>
+                ))}
+              </select>
+            ) : (
+              <div style={{ fontSize: 14, fontWeight: 700 }}>{perfil.posicion || '–'}</div>
+            )}
+          </div>
+
+          <div>
             <div className="label" style={{ marginBottom: 5 }}>Estado físico</div>
             {esPropio && editando ? (
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 {OPCIONES_ESTADO_FISICO.map((op) => (
                   <button
                     key={op}
                     onClick={() => setForm((f) => ({ ...f, estadoFisico: op }))}
                     style={{
-                      flex: 1, textAlign: 'center', padding: 9, borderRadius: 10, fontSize: 12.5, fontWeight: 700, cursor: 'pointer',
+                      flex: '1 1 auto', textAlign: 'center', padding: '9px 6px', borderRadius: 10, fontSize: 11.5, fontWeight: 700, cursor: 'pointer',
                       border: form.estadoFisico === op ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
                       background: form.estadoFisico === op ? 'var(--accent-bg)' : '#fff',
                       color: form.estadoFisico === op ? 'var(--accent)' : 'var(--muted)',
@@ -217,6 +243,32 @@ export default function Perfil() {
               </div>
             ) : (
               <div style={{ fontSize: 14, fontWeight: 700 }}>{perfil.estadoFisico || '–'}</div>
+            )}
+          </div>
+
+          <div>
+            <div className="label" style={{ marginBottom: 5 }}>Preferencia de equipo</div>
+            {esPropio && editando ? (
+              <div style={{ display: 'flex', gap: 8 }}>
+                {OPCIONES_AUTOPERCEPCION.map((op) => (
+                  <button
+                    key={op.value}
+                    onClick={() => setForm((f) => ({ ...f, autopercepcion: op.value }))}
+                    style={{
+                      flex: 1, textAlign: 'center', padding: 9, borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                      border: form.autopercepcion === op.value ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
+                      background: form.autopercepcion === op.value ? 'var(--accent-bg)' : '#fff',
+                      color: form.autopercepcion === op.value ? 'var(--accent)' : 'var(--muted)',
+                    }}
+                  >
+                    {op.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: 14, fontWeight: 700 }}>
+                {OPCIONES_AUTOPERCEPCION.find((o) => o.value === perfil.autopercepcion)?.label || '–'}
+              </div>
             )}
           </div>
         </div>
