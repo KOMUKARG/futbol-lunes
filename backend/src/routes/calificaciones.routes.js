@@ -1,6 +1,7 @@
 const express = require('express');
 const prisma = require('../db');
 const { requiereAuth } = require('../middleware/auth');
+const { obtenerConfiguracion } = require('../utils/configuracion');
 
 const router = express.Router();
 
@@ -18,6 +19,11 @@ function periodoActual() {
 
 // GET /api/calificaciones/pendientes — jugadores que todavía no califiqué en el período actual
 router.get('/pendientes', requiereAuth, async (req, res) => {
+  const config = await obtenerConfiguracion();
+  if (!config.calificacionesAbiertas) {
+    return res.json({ abierto: false, periodo: periodoActual(), total: 0, completados: 0, pendientes: [] });
+  }
+
   const periodo = periodoActual();
   const jugadorQueCalificaId = req.usuario.id;
 
@@ -34,6 +40,7 @@ router.get('/pendientes', requiereAuth, async (req, res) => {
 
   const yaCalificadosIds = new Set(yaCalificados.map((c) => c.jugadorCalificadoId));
   res.json({
+    abierto: true,
     periodo,
     total: todos.length,
     completados: yaCalificadosIds.size,
@@ -44,6 +51,11 @@ router.get('/pendientes', requiereAuth, async (req, res) => {
 // POST /api/calificaciones — el jugador califica a un compañero (anónimo, sección 4.4)
 // body: { jugadorCalificadoId, nivelTecnico, actitud, ... } (1-5 cada concepto)
 router.post('/', requiereAuth, async (req, res) => {
+  const config = await obtenerConfiguracion();
+  if (!config.calificacionesAbiertas) {
+    return res.status(403).json({ error: 'Las calificaciones trimestrales están cerradas por el administrador.' });
+  }
+
   const jugadorQueCalificaId = req.usuario.id;
   const { jugadorCalificadoId, ...valores } = req.body;
 

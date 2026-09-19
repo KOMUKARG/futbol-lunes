@@ -17,7 +17,7 @@ router.get('/', requiereAuth, async (req, res) => {
   const usuarios = await prisma.usuario.findMany({
     select: {
       id: true, nombre: true, foto: true, posicion: true,
-      autopercepcion: true, rol: true,
+      autopercepcion: true, rol: true, amonestado: true,
     },
     orderBy: { nombre: 'asc' },
   });
@@ -75,6 +75,17 @@ router.post('/', requiereAuth, requiereAdmin, async (req, res) => {
   });
   const { passwordHash: _omit, ...usuarioSinPassword } = usuario;
   res.status(201).json(usuarioSinPassword);
+});
+
+// PATCH /api/usuarios/:id/amonestacion — solo Admin: sanciona con amarilla o la saca.
+// Queda fija hasta que el administrador decida sacarla (no expira sola).
+router.patch('/:id/amonestacion', requiereAuth, requiereAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { amonestado } = req.body;
+
+  const usuario = await prisma.usuario.update({ where: { id }, data: { amonestado: !!amonestado } });
+  const { passwordHash, ...usuarioSinPassword } = usuario;
+  res.json(usuarioSinPassword);
 });
 
 // GET /api/usuarios/:id/evolucion-puntuacion — puntuación promedio por período (para el gráfico del perfil)

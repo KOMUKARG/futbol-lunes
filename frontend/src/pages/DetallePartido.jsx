@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useConfiguracion } from '../context/ConfiguracionContext';
+import Escudo from '../components/Escudo';
 
 export default function DetallePartido() {
   const { id } = useParams();
   const { usuario, esAdmin } = useAuth();
+  const { escudoOscuroUrl, escudoBlancoUrl } = useConfiguracion();
   const [partido, setPartido] = useState(null);
 
   useEffect(() => {
@@ -26,6 +29,9 @@ export default function DetallePartido() {
 
   const horasDesdePartido = (Date.now() - new Date(partido.fecha).getTime()) / 36e5;
   const puedeVotarMVP = partido.estado === 'jugado' && horasDesdePartido <= 24;
+  const jugueEsePartido = [...(equipoOscuro?.jugadores || []), ...(equipoBlanco?.jugadores || [])]
+    .some((ej) => ej.jugador.id === usuario.id);
+  const puedeCalificarCompaneros = partido.estado === 'jugado' && horasDesdePartido <= 24 && jugueEsePartido;
 
   return (
     <div className="app-shell">
@@ -43,13 +49,13 @@ export default function DetallePartido() {
       <div className="content">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 28 }}>
           <div style={{ textAlign: 'center' }}>
-            <div className="dot-oscuro" style={{ margin: '0 auto 6px' }} />
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}><Escudo color="oscuro" url={escudoOscuroUrl} size={20} /></div>
             <div className="disp" style={{ fontWeight: 800, fontSize: 14 }}>OSCUROS</div>
             <div className="disp" style={{ fontSize: 52, fontWeight: 800 }}>{partido.golesOscuros ?? '-'}</div>
           </div>
           <div style={{ fontSize: 11, color: '#9A9EA8', fontWeight: 800, marginTop: 26 }}>FINAL</div>
           <div style={{ textAlign: 'center' }}>
-            <div className="dot-blanco" style={{ margin: '0 auto 6px' }} />
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}><Escudo color="blanco" url={escudoBlancoUrl} size={20} /></div>
             <div className="disp" style={{ fontWeight: 800, fontSize: 14 }}>BLANCOS</div>
             <div className="disp" style={{ fontSize: 52, fontWeight: 800 }}>{partido.golesBlancos ?? '-'}</div>
           </div>
@@ -79,12 +85,18 @@ export default function DetallePartido() {
           </div>
         )}
 
+        {puedeCalificarCompaneros && (
+          <Link to={`/partido/${id}/calificar-companeros`}>
+            <button className="btn-primary">Calificar a mis compañeros (24 hs)</button>
+          </Link>
+        )}
+
         <div>
           <div className="disp" style={{ fontWeight: 700, fontSize: 17, marginBottom: 10 }}>Goleadores</div>
           <div className="card" style={{ padding: '6px 16px' }}>
             {golesPorJugador.map((g) => (
               <div key={g.jugadorId} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid #F0EEE8' }}>
-                <div className={g.equipoColor === 'blanco' ? 'dot-blanco' : 'dot-oscuro'} />
+                <Escudo color={g.equipoColor} url={g.equipoColor === 'blanco' ? escudoBlancoUrl : escudoOscuroUrl} size={13} />
                 <div style={{ flexGrow: 1, fontSize: 13, fontWeight: 600 }}>{g.nombre}</div>
                 <div style={{ fontSize: 13 }}>{'⚽'.repeat(g.cantidad)}</div>
               </div>

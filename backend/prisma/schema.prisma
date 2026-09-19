@@ -46,6 +46,7 @@ model Usuario {
   passwordHash     String
   foto             String?
   fechaAlta        DateTime @default(now())
+  amonestado       Boolean  @default(false) // amarilla fija hasta que el admin la saque
 
   // Perfil
   edad             Int?
@@ -58,15 +59,17 @@ model Usuario {
   rol              Rol      @default(jugador)
 
   // Relaciones
-  inscripciones              Inscripcion[]
-  equipoJugador              EquipoJugador[]
-  goles                      Gol[]
-  posts                      Post[]
-  comentarios                Comentario[]
-  calificacionesEnviadas     Calificacion[] @relation("CalificacionesEnviadas")
-  calificacionesRecibidas    Calificacion[] @relation("CalificacionesRecibidas")
-  votosMVPEmitidos           VotoMVP[]      @relation("VotosEmitidos")
-  votosMVPRecibidos          VotoMVP[]      @relation("VotosRecibidos")
+  inscripciones                    Inscripcion[]
+  equipoJugador                    EquipoJugador[]
+  goles                            Gol[]
+  posts                            Post[]
+  comentarios                      Comentario[]
+  calificacionesEnviadas           Calificacion[]        @relation("CalificacionesEnviadas")
+  calificacionesRecibidas          Calificacion[]        @relation("CalificacionesRecibidas")
+  votosMVPEmitidos                 VotoMVP[]             @relation("VotosEmitidos")
+  votosMVPRecibidos                VotoMVP[]             @relation("VotosRecibidos")
+  calificacionesPartidoEnviadas    CalificacionPartido[] @relation("CalifPartidoEnviadas")
+  calificacionesPartidoRecibidas   CalificacionPartido[] @relation("CalifPartidoRecibidas")
 
   @@map("usuarios")
 }
@@ -79,10 +82,11 @@ model Partido {
   golesBlancos  Int?
   creadoEn      DateTime      @default(now())
 
-  inscripciones Inscripcion[]
-  equipos       Equipo[]
-  goles         Gol[]
-  votosMVP      VotoMVP[]
+  inscripciones         Inscripcion[]
+  equipos               Equipo[]
+  goles                 Gol[]
+  votosMVP              VotoMVP[]
+  calificacionesPartido CalificacionPartido[]
 
   @@map("partidos")
 }
@@ -172,6 +176,35 @@ model VotoMVP {
 
   @@unique([partidoId, jugadorQueVotaId])
   @@map("votos_mvp")
+}
+
+// Puntuación general 1-10 que un jugador le pone a cada compañero al finalizar un partido
+// (independiente de la calificación trimestral por conceptos). Solo pueden calificar quienes jugaron.
+model CalificacionPartido {
+  id                    String   @id @default(uuid())
+  partidoId             String
+  partido               Partido  @relation(fields: [partidoId], references: [id], onDelete: Cascade)
+  jugadorCalificadoId   String
+  jugadorCalificado     Usuario  @relation("CalifPartidoRecibidas", fields: [jugadorCalificadoId], references: [id], onDelete: Cascade)
+  jugadorQueCalificaId  String
+  jugadorQueCalifica    Usuario  @relation("CalifPartidoEnviadas", fields: [jugadorQueCalificaId], references: [id], onDelete: Cascade)
+  puntaje               Int      // 1 a 10, general (no por conceptos)
+  creadoEn              DateTime @default(now())
+
+  @@unique([partidoId, jugadorCalificadoId, jugadorQueCalificaId])
+  @@map("calificaciones_partido")
+}
+
+// Fila única de configuración global de la app: escudos de los equipos y si las
+// calificaciones trimestrales están abiertas (el administrador decide cuándo abrir/cerrar).
+model Configuracion {
+  id                     String   @id @default("singleton")
+  escudoOscuroUrl        String?  @db.Text
+  escudoBlancoUrl        String?  @db.Text
+  calificacionesAbiertas Boolean  @default(true)
+  actualizadoEn          DateTime @updatedAt
+
+  @@map("configuracion")
 }
 
 model Post {

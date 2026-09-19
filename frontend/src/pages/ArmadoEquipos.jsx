@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/client';
+import Escudo from '../components/Escudo';
+import { useConfiguracion } from '../context/ConfiguracionContext';
 
 export default function ArmadoEquipos() {
   const navigate = useNavigate();
@@ -65,6 +67,14 @@ export default function ArmadoEquipos() {
           <Columna titulo="OSCUROS" puntos={sumaOscuros} jugadores={oscuros} onMover={(j) => mover(j, 'oscuros', 'blancos')} color="oscuro" />
           <Columna titulo="BLANCOS" puntos={sumaBlancos} jugadores={blancos} onMover={(j) => mover(j, 'blancos', 'oscuros')} color="blanco" />
         </div>
+
+        <Link to="/admin/escudos" style={{ textDecoration: 'none', color: 'inherit' }}>
+          <div className="card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#15171B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="M12 2.5 4.5 5.8v5.4c0 5.3 3.2 9.3 7.5 10.8 4.3-1.5 7.5-5.5 7.5-10.8V5.8L12 2.5z" /></svg>
+            <div style={{ flexGrow: 1, fontSize: 12.5, fontWeight: 700 }}>Cambiar escudos de los equipos</div>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9A9EA8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
+          </div>
+        </Link>
       </div>
 
       <div style={{ padding: 20, background: '#fff', borderTop: '1px solid var(--border)' }}>
@@ -77,10 +87,11 @@ export default function ArmadoEquipos() {
 }
 
 function Columna({ titulo, puntos, jugadores, onMover, color }) {
+  const { escudoOscuroUrl, escudoBlancoUrl } = useConfiguracion();
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-        <div className={color === 'blanco' ? 'dot-blanco' : 'dot-oscuro'} />
+        <Escudo color={color} url={color === 'blanco' ? escudoBlancoUrl : escudoOscuroUrl} size={14} />
         <div className="disp" style={{ fontWeight: 800, fontSize: 15 }}>{titulo}</div>
       </div>
       <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--muted)', fontWeight: 700 }}>{puntos} pts</div>

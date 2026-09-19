@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 const ITEMS = [
   { to: '/', label: 'Home' },
   { to: '/inscripcion', label: 'Inscripción' },
+  { to: '/jugadores', label: 'Jugadores' },
   { to: '/historial', label: 'Historial' },
   { to: '/feed', label: 'Feed' },
   { to: '/perfil', label: 'Perfil' },
